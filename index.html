@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#16191D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Strength">
+<title>Strength plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#16191D;
+  --road:#FFD100;
+  --paper:#EEF1F3;
+  --card:#FFFFFF;
+  --line:#CBD3D9;
+  --muted:#46525C;
+  --go:#17703A;
+  --focus:#0B57D0;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --display:"Barlow Condensed","Arial Narrow",Impact,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 19px/1.55 var(--body);padding-bottom:env(safe-area-inset-bottom)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+button{font:inherit;color:inherit}
+
+/* Header: ink bar with a dashed road line underneath */
+.top{background:var(--ink);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between}
+.top h1{font:700 28px/1 var(--display);margin:0;letter-spacing:.02em}
+.guidelink{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:2px solid #fff;border-radius:10px;background:transparent;cursor:pointer;font-weight:700;font-size:17px;color:#fff}
+.guidelink[aria-current="page"]{background:var(--road);border-color:var(--road);color:var(--ink)}
+.roadline{height:8px;background:repeating-linear-gradient(90deg,var(--road) 0 30px,var(--ink) 30px 48px)}
+
+/* Day strip */
+.strip{position:sticky;top:0;z-index:10;background:var(--ink);padding:10px 8px 12px;border-bottom:1px solid #000}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;max-width:640px;margin:0 auto}
+.daytab{position:relative;display:flex;align-items:center;justify-content:center;min-height:52px;padding:0;border:0;border-radius:10px;background:#2A3037;color:#fff;cursor:pointer;font-weight:700;font-size:16px}
+.daytab[aria-current="page"]{background:var(--road);color:var(--ink)}
+.daytab.today::after{content:"";position:absolute;bottom:5px;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:50%;background:currentColor}
+
+main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
+.dayname{font:700 46px/1 var(--display);margin:0 0 4px;letter-spacing:.01em}
+.focus{font-size:22px;font-weight:700;margin:0;line-height:1.3}
+.time{display:block;font-size:17px;font-weight:400;color:var(--muted)}
+.intro{margin:8px 0 14px;font-size:17px;color:var(--muted);line-height:1.45}
+
+.phase{margin:0 0 6px}
+.phase label{display:block;font-weight:700;font-size:17px;margin-bottom:4px}
+.phase select{width:100%;min-height:52px;padding:0 14px;font:inherit;font-size:19px;background:#fff;border:2px solid var(--ink);border-radius:10px;color:var(--ink)}
+
+.note{background:var(--card);border:1px solid var(--line);border-left:8px solid var(--road);border-radius:10px;padding:12px 14px;margin:0 0 14px}
+.note strong{display:block}
+
+.prog{display:flex;justify-content:space-between;margin:12px 0 6px;font-weight:700;font-size:17px}
+.bar{height:10px;background:#D7DEE3;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--go);transition:width .25s}
+
+.ex{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:12px 0;overflow:hidden}
+.ex.is-done{border-color:var(--go)}
+.exhead{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 10px}
+.check{flex:none;width:54px;height:54px;border-radius:50%;border:3px solid var(--ink);background:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.check svg{width:30px;height:30px;stroke:#fff;fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.check[aria-pressed="true"]{background:var(--go);border-color:var(--go)}
+.check[aria-pressed="true"] svg{opacity:1}
+.exbtn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;background:none;border:0;padding:6px 0;min-height:56px;cursor:pointer}
+.exname{display:block;font:700 28px/1.05 var(--display)}
+.exdose{display:block;font-size:18px;color:var(--muted);margin-top:2px}
+.chev{flex:none;width:14px;height:14px;border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:rotate(45deg);margin:0 6px 4px 0;transition:transform .2s}
+.exbtn[aria-expanded="true"] .chev{transform:rotate(-135deg);margin-bottom:-4px}
+.is-done .exname{color:var(--go)}
+.info .exhead{padding-left:16px}
+.info .exname{font-size:24px}
+.info p{margin:8px 0 0}
+
+.exbody{padding:4px 16px 18px}
+.exbody[hidden]{display:none}
+.kit{background:#FFF6BF;border-left:6px solid var(--road);border-radius:6px;padding:10px 12px;margin:8px 0 14px}
+.exbody ol{margin:0 0 14px;padding-left:1.3em}
+.exbody li{margin:0 0 6px}
+.watch{margin:0 0 16px}
+
+.vid{position:relative;aspect-ratio:16/9;background:#000;border-radius:10px;overflow:hidden}
+.vid img,.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover}
+.play{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;cursor:pointer;padding:0}
+.play::before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.28)}
+.play span{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;background:var(--road)}
+.play span::after{content:"";position:absolute;left:29px;top:22px;border-left:26px solid var(--ink);border-top:16px solid transparent;border-bottom:16px solid transparent}
+.vidmeta{margin:8px 0 0;font-size:17px;color:var(--muted)}
+.vidmeta a{font-weight:700;color:var(--ink);white-space:nowrap}
+
+.guide h3{font:700 30px/1.1 var(--display);margin:28px 0 6px}
+.guide h3:first-of-type{margin-top:8px}
+.guide p{margin:0 0 10px}
+.phases{list-style:none;margin:0;padding:0}
+.phases li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0 0 8px}
+.phases b{display:block}
+.fine{margin-top:32px;font-size:16px;color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar i,.chev{transition:none}}
+@media (min-width:600px){body{font-size:20px}.dayname{font-size:60px}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>Strength plan</h1>
+  <button type="button" class="guidelink" id="guidelink" data-route="guide">Guide</button>
+</header>
+<div class="roadline" aria-hidden="true"></div>
+<nav class="strip" aria-label="Days of the week"><div class="days" id="days"></div></nav>
+<main id="main"></main>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Content ---------- */
+
+  var PHASES = [
+    { label: "Weeks 1 to 2", name: "Learn the moves", text: "One set of each exercise. Lightest weights. The only job is good form." },
+    { label: "Weeks 3 to 4", name: "Build the base", text: "Two sets of most exercises. Add the green band where the plan says so." },
+    { label: "Weeks 5 to 6", name: "Build", text: "A couple more reps. If every rep felt easy, go up one step (see the Guide)." },
+    { label: "Weeks 7 to 8", name: "Push a little", text: "Three sets on the main moves. Still finishing each set with 2 or 3 reps in hand." },
+    { label: "Week 9 on", name: "Keep going", text: "Keep the week 7 to 8 plan and keep nudging weights up gradually." }
+  ];
+
+  var EX = {
+    sitstand: {
+      name: "Sit-to-stand",
+      kit: "Sturdy chair pushed against a wall so it can't slide.",
+      steps: ["Sit near the front edge, feet flat and hip-width apart.", "Lean slightly forward, then stand up using your legs.", "Stand fully tall, then lower back down slowly (count to 3).", "Breathe out as you stand."],
+      watch: "Lowering slowly builds the most strength. Use your hands lightly at first if you need to, then try to let them go.",
+      doses: ["1 set of 8", "2 sets of 8", "2 sets of 10", "3 sets of 10"],
+      video: { id: "y6NUWq_AEvI", title: "Sit to stand, physiotherapist demo" }
+    },
+    bridge: {
+      name: "Glute bridge",
+      kit: "Mat. From week 3, add the green band just above your knees.",
+      steps: ["Lie on your back, knees bent, feet flat and hip-width apart.", "Push through your heels and lift your hips until your shoulders, hips and knees are in a straight line.", "Squeeze your bottom for a second at the top.", "Lower slowly."],
+      watch: "Lift with your hips, not by arching your lower back. With the band on, keep pressing your knees gently outwards.",
+      doses: ["1 set of 8", "2 sets of 10", "2 sets of 12", "3 sets of 12"],
+      video: { id: "x88YLPyUvMU", title: "Glute bridge for seniors, Vintage Fitness" }
+    },
+    calf: {
+      name: "Calf raises at the wall",
+      kit: "Fingertips on the wall for balance. Feet hip-width apart.",
+      steps: ["Stand an arm's length from the wall, fingertips resting on it.", "Rise up onto the balls of your feet and pause for a second.", "Lower slowly for a count of 3."],
+      watch: "Go straight up rather than rolling to the outside of your feet. From week 5, try one leg at a time.",
+      doses: ["1 set of 10", "2 sets of 10", "2 sets of 12", "3 sets of 12"],
+      video: { id: "wTXTG9T3DA0", title: "Calf raises for seniors" }
+    },
+    sidestep: {
+      name: "Band side steps",
+      kit: "Green band just above your knees. Move to the blue band from week 5 if it feels easy.",
+      steps: ["Band above your knees, feet hip-width apart, knees slightly bent.", "Take a small step sideways, then bring the other foot in, keeping the band taut.", "Take your steps one way, then come back the other way.", "Stay beside the wall with a hand free to steady yourself."],
+      watch: "Toes pointing forward and small steps. Big steps let the band go slack.",
+      doses: ["1 set of 6 steps each way", "2 sets of 8 steps each way", "2 sets of 10 steps each way", "3 sets of 10 steps each way"],
+      video: { id: "yTl-8oDokNk", title: "Mini band lateral walk" }
+    },
+    birddog: {
+      name: "Bird dog",
+      kit: "Mat. Fold it double under your knees if they feel sore.",
+      steps: ["On hands and knees, hands under shoulders, knees under hips, back flat.", "Slowly stretch one arm forward and the opposite leg back.", "Hold for 3 seconds, then return with control.", "Swap sides."],
+      watch: "Keep your hips level, like carrying a tray of tea on your back. If it's wobbly, lift just the leg or just the arm at first.",
+      doses: ["1 set of 4 each side", "2 sets of 5 each side", "2 sets of 6 each side", "2 sets of 8 each side"],
+      video: { id: "bBfUYiLaUE8", title: "Static bird dog for seniors, Vintage Fitness" }
+    },
+    tandem: {
+      name: "Heel-to-toe stand",
+      kit: "Stand beside a wall or worktop. Fingertips only.",
+      steps: ["Stand tall beside the wall.", "Place one foot directly in front of the other, heel touching toes.", "Hold, looking at a spot ahead of you.", "Swap the front foot and repeat."],
+      watch: "A little wobble is the point. If you're gripping the wall, use a wider stance.",
+      doses: ["2 holds of 20 seconds each side", "2 holds of 30 seconds each side", "3 holds of 30 seconds each side", "3 holds of 40 seconds each side"],
+      video: { id: "gJdl-MNMxlY", title: "Tandem stance balance exercise" }
+    },
+    single: {
+      name: "One-leg stand",
+      kit: "Stand beside a wall or worktop with fingertips resting on it.",
+      steps: ["Stand tall with your fingertips on the wall.", "Shift your weight onto one leg and lift the other foot just off the floor.", "Hold, keeping a soft bend in the standing knee.", "Swap legs."],
+      watch: "Fingertips only, not your whole hand. Later, try hovering your hand just off the wall.",
+      doses: ["2 holds of 10 seconds each leg", "2 holds of 15 seconds each leg", "3 holds of 15 seconds each leg", "3 holds of 20 seconds each leg"],
+      video: { id: "R1RF1PbYSQQ", title: "Single leg balance for seniors" }
+    },
+    openbook: {
+      name: "Open book stretch",
+      kit: "Mat. A pillow between your knees is fine.",
+      steps: ["Lie on your side, knees bent and stacked, arms straight out in front with palms together.", "Lift the top arm and open it up and back like opening a book, following your hand with your eyes.", "Go only as far as is comfortable and breathe out.", "Bring it back slowly. Finish one side, then swap."],
+      watch: "Keep your knees together and down. The turn should come from your upper back, not your hips.",
+      doses: ["1 set of 6 each side", "2 sets of 6 each side", "2 sets of 8 each side", "2 sets of 10 each side"],
+      video: { id: "rDviWORCWEw", title: "Open books, sidelying thoracic rotation" }
+    },
+    wallpush: {
+      name: "Wall push-ups",
+      kit: "A clear wall and non-slip shoes.",
+      steps: ["Stand an arm's length from the wall, hands on it at shoulder height and slightly wider than your shoulders.", "Keep your body in one straight line from head to heels.", "Bend your elbows and bring your chest towards the wall.", "Push back to the start."],
+      watch: "To make it harder, walk your feet a little further from the wall. Don't let your hips sag.",
+      doses: ["1 set of 8", "2 sets of 8", "2 sets of 10", "3 sets of 10"],
+      video: { id: "oduG4CjpSw0", title: "How to properly do a wall push-up, Wellen" }
+    },
+    row: {
+      name: "One-arm dumbbell row",
+      kit: "Dumbbell on its lightest setting. Sturdy chair pushed against a wall.",
+      steps: ["Stand beside the chair, rest one hand on the seat and step the same-side foot back so your back is roughly flat.", "Let the dumbbell hang from your other hand.", "Pull your elbow up towards your hip, squeezing your shoulder blade in.", "Lower slowly. Finish all reps, then swap arms."],
+      watch: "Flat back, long neck. Don't twist your body to lift the weight.",
+      doses: ["1 set of 8 each arm", "2 sets of 8 each arm", "2 sets of 10 each arm", "3 sets of 10 each arm"],
+      video: { id: "-Upf29pKrFI", title: "One arm dumbbell row using a bench or chair" }
+    },
+    press: {
+      name: "Seated dumbbell shoulder press",
+      kit: "Your lightest weights. If the lightest dumbbell setting feels too heavy, use two water bottles at first.",
+      steps: ["Sit tall with your back against the chair, weights at shoulder height.", "Press up until your arms are nearly straight.", "Lower slowly back to shoulder height.", "Breathe out as you press."],
+      watch: "Don't arch your back or slam your elbows straight. If you feel a pinch at the top of the shoulder, stop and mention it to your GP or a physio.",
+      doses: ["1 set of 8", "2 sets of 8", "2 sets of 10", "3 sets of 10"],
+      video: { id: "1jYq9QQEWqE", title: "Seated dumbbell shoulder press tutorial" }
+    },
+    curl: {
+      name: "Bicep curl",
+      kit: "Light dumbbells. Sitting or standing.",
+      steps: ["Arms by your sides, palms facing forward.", "Keep your elbows pinned to your sides and bend your elbows to lift the weights.", "Squeeze at the top, then lower slowly."],
+      watch: "No swinging. If you have to lean back to lift it, it's too heavy.",
+      doses: ["1 set of 8", "2 sets of 10", "2 sets of 12", "3 sets of 12"],
+      video: { id: "tE21E4kzXJI", title: "Dumbbell curls, the proper way" }
+    },
+    pullapart: {
+      name: "Band pull-aparts",
+      kit: "Green band. Move to blue from week 5 if it feels easy.",
+      steps: ["Stand tall, arms out in front at chest height, holding the band with a little tension.", "Pull the band apart by squeezing your shoulder blades together, arms staying straight.", "Bring your hands back together slowly."],
+      watch: "Shoulders down, away from your ears.",
+      doses: ["1 set of 10", "2 sets of 10", "2 sets of 12", "3 sets of 12"],
+      video: { id: "2fmxGGtdbog", title: "How to do resistance band pull aparts" }
+    },
+    floorget: {
+      name: "Down to the floor and back up",
+      kit: "Mat, with a sturdy chair or sofa beside you. Have someone in the house for the first few goes.",
+      steps: ["Stand beside the chair. Lower yourself to kneeling using the chair for support, then down to sitting on the mat.", "To get up, roll onto one knee, put your hands on the chair seat and push up.", "Go slowly. The video shows the easiest methods."],
+      watch: "This is a life skill as much as an exercise. If it's hard, keep your hands on the chair the whole way and build up gradually.",
+      doses: ["2 slow goes", "2 slow goes", "3 slow goes", "3 slow goes"],
+      video: { id: "OumCdMlk0nU", title: "Best way to get on and off the floor, Bob and Brad" }
+    },
+    goblet: {
+      name: "Goblet squat to a chair",
+      kit: "One dumbbell held at your chest with both hands. Weeks 1 to 2: try it with no weight first.",
+      steps: ["Stand in front of the chair, feet a little wider than your hips, dumbbell close to your chest.", "Push your hips back and bend your knees until you lightly touch the seat.", "Stand back up, driving through your heels.", "Breathe out as you stand."],
+      watch: "Chest up, knees in line with your toes. Don't drop onto the seat.",
+      doses: ["1 set of 8", "2 sets of 8", "2 sets of 10", "3 sets of 10"],
+      video: { id: "GlmIqv3RUQU", title: "Goblet squat to chair, Dr Delilah Beall" }
+    },
+    rdl: {
+      name: "Dumbbell hip hinge",
+      kit: "A dumbbell in each hand, on the lightest setting.",
+      steps: ["Stand tall, feet hip-width apart, weights in front of your thighs, knees slightly bent.", "Push your hips straight back, letting the weights slide down your legs.", "Stop around mid-shin, or as soon as your back wants to round.", "Squeeze your bottom to stand back up."],
+      watch: "Your back stays flat the whole time. This is a hip movement, not a bend at the waist. A shorter range is fine.",
+      doses: ["1 set of 8", "2 sets of 8", "2 sets of 10", "3 sets of 10"],
+      video: { id: "3zqDris6lD4", title: "Dumbbell Romanian deadlift, beginner hip hinge" }
+    },
+    floorpress: {
+      name: "Dumbbell floor press",
+      kit: "Mat and light dumbbells.",
+      steps: ["Sit on the mat and lie back, knees bent, weights held over your chest.", "Lower until your upper arms lightly touch the floor.", "Press back up without clashing the weights together."],
+      watch: "If getting down to the floor feels awkward on the day, do extra wall push-ups instead.",
+      doses: ["1 set of 8", "2 sets of 8", "2 sets of 10", "3 sets of 10"],
+      video: { id: "T0Y3OBF1bNI", title: "How to do a dumbbell floor press" }
+    },
+    carry: {
+      name: "Farmer's carry",
+      kit: "A dumbbell in each hand. Clear a hallway or walk round the room.",
+      steps: ["Pick the weights up by bending your knees and hips, not by rounding your back.", "Stand tall with your shoulders down and walk slowly with steady steps.", "Turn carefully at the end and walk back."],
+      watch: "Set the weights down slowly. You can go a bit heavier than other exercises, as long as your posture holds the whole way.",
+      doses: ["2 walks of 20 steps", "2 walks of 30 steps", "3 walks of 30 steps", "3 walks of 40 steps"],
+      video: { id: "ddicDVYNrag", title: "Farmer carries with dumbbells" }
+    }
+  };
+
+  var WARM = "March on the spot, 10 big arm circles each way, 10 hip circles each way and a few gentle knee lifts. You should feel warm, not tired.";
+  var COOL = "Finish with a slow walk around the house, a glass of water, and a protein-rich snack or meal within two hours.";
+
+  var DAYS = [
+    { key: "mon", short: "Mon", name: "Monday", focus: "Legs and core", time: "About 30 minutes", strength: true,
+      intro: "Big muscles first. This session does the most for standing up, stairs and staying steady.",
+      ex: ["sitstand", "bridge", "calf", "sidestep", "birddog"] },
+    { key: "tue", short: "Tue", name: "Tuesday", focus: "Balance and mobility", time: "About 15 minutes",
+      intro: "Short and gentle. Steadiness is a skill, and it trains quickly.",
+      ex: ["tandem", "single", "openbook"] },
+    { key: "wed", short: "Wed", name: "Wednesday", focus: "Upper body", time: "About 30 minutes", strength: true,
+      intro: "Back, chest, shoulders and arms. Pulling exercises matter as much as pushing ones.",
+      ex: ["wallpush", "row", "press", "curl", "pullapart"] },
+    { key: "thu", short: "Thu", name: "Thursday", focus: "Balance and floor skills", time: "About 15 minutes",
+      intro: "More balance work, plus practice getting down to and up from the floor.",
+      ex: ["single", "tandem", "floorget"] },
+    { key: "fri", short: "Fri", name: "Friday", focus: "Full body", time: "About 30 minutes", strength: true,
+      intro: "The heaviest day of the week. Take your time and rest between sets.",
+      ex: ["goblet", "rdl", "floorpress", "carry"] },
+    { key: "sat", short: "Sat", name: "Saturday", focus: "Walk day", time: "Your normal dog walk",
+      intro: "Your usual walk is the main event. If you fancy a bonus, do these two while the kettle boils.",
+      ex: [{ id: "sitstand", dose: "1 set of 10" }, { id: "calf", dose: "1 set of 12" }] },
+    { key: "sun", short: "Sun", name: "Sunday", focus: "Rest day", time: "Nothing to do but walk",
+      intro: "Muscle is built while you rest. Normal walk, then a proper meal with plenty of protein.",
+      ex: [] }
+  ];
+
+  var GUIDE = [
+    ["How hard should it feel?", "Aim for 6 or 7 out of 10. Finish every set with 2 or 3 good reps still in hand. Breathe out on the effort and in on the return, and never hold your breath. Some muscle ache for a day or two is normal. Sharp or joint pain is not, so stop that exercise."],
+    ["Between sets", "Rest 60 to 90 seconds between sets. Nobody is timing you."],
+    ["When to make it harder", "When you've finished every set at the top number of reps with steady form and it felt easy, go up one step next session: 1 to 2 kg heavier, the next band colour, or a few more reps. Change one thing at a time."],
+    ["Kit", "Bands: green is lightest, then blue, then yellow. Red and black are too heavy for now. Dumbbells: start on the lightest setting and check the weight selector is fully locked in before every lift. Chair: sturdy, no wheels, pushed against a wall."],
+    ["Fuel and water", "Have something to eat an hour or two before you train, and a protein-rich meal or snack within two hours after (eggs, Greek yoghurt, fish, chicken, milk or cottage cheese). Keep water nearby."],
+    ["Good day, flat day", "Feeling good: do the full session. Feeling flat: do one set of each exercise and call it a win. Light-headed, unwell or something feels off: skip it and rest."],
+    ["Stop and get help", "Stop straight away and speak to a doctor if you get chest pain or pressure, feel faint or dizzy, become unusually breathless, or get a sharp joint pain that doesn't ease. In an emergency, call 999."]
+  ];
+
+  /* ---------- Helpers ---------- */
+
+  var TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  var DOW = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  var main = document.getElementById("main");
+  var daysEl = document.getElementById("days");
+  var guideLink = document.getElementById("guidelink");
+
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  };
+
+  function pad(n) { return String(n).length < 2 ? "0" + n : String(n); }
+  function weekKey() {
+    var d = new Date();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function todayKey() { return DOW[new Date().getDay()]; }
+
+  var WK = weekKey();
+  var phase = Math.min(Math.max(parseInt(store.get("sp-phase", 0), 10) || 0, 0), PHASES.length - 1);
+  var done = store.get("sp-done", {});
+  Object.keys(done).forEach(function (k) { if (k.indexOf(WK + ":") !== 0) delete done[k]; });
+  store.set("sp-done", done);
+  var opened = {};
+
+  function doseFor(ex, override) { return override || ex.doses[Math.min(phase, 3)]; }
+  function normal(e) { return typeof e === "string" ? { id: e } : e; }
+  function keyOf(day, id) { return WK + ":" + day.key + ":" + id; }
+
+  /* ---------- Rendering ---------- */
+
+  function renderNav(active) {
+    var today = todayKey();
+    daysEl.innerHTML = DAYS.map(function (d) {
+      var cls = "daytab" + (d.key === today ? " today" : "");
+      var cur = d.key === active ? ' aria-current="page"' : "";
+      var label = d.name + (d.key === today ? " (today)" : "");
+      return '<button type="button" class="' + cls + '" data-route="' + d.key + '"' + cur + ' aria-label="' + label + '">' + d.short + "</button>";
+    }).join("");
+    if (active === "guide") guideLink.setAttribute("aria-current", "page");
+    else guideLink.removeAttribute("aria-current");
+  }
+
+  function videoHTML(v) {
+    var thumb = "https://i.ytimg.com/vi/" + v.id + "/hqdefault.jpg";
+    return '<div class="vid" data-id="' + v.id + '">' +
+      '<button class="play" data-act="play" aria-label="Play video: ' + v.title + '">' +
+      '<img src="' + thumb + '" alt="" loading="lazy"><span></span></button></div>' +
+      '<p class="vidmeta">' + v.title + '. <a href="https://www.youtube.com/watch?v=' + v.id + '" target="_blank" rel="noopener">Open in YouTube</a></p>';
+  }
+
+  function cardHTML(day, item) {
+    var ex = EX[item.id];
+    var k = keyOf(day, item.id);
+    var isDone = !!done[k];
+    var isOpen = !!opened[k];
+    return '<article class="ex' + (isDone ? " is-done" : "") + '" data-k="' + k + '">' +
+      '<div class="exhead">' +
+        '<button class="check" data-act="check" aria-pressed="' + isDone + '" aria-label="Done: ' + ex.name + '">' + TICK + "</button>" +
+        '<button class="exbtn" data-act="toggle" aria-expanded="' + isOpen + '">' +
+          '<span><span class="exname">' + ex.name + '</span><span class="exdose">' + doseFor(ex, item.dose) + '</span></span>' +
+          '<span class="chev" aria-hidden="true"></span>' +
+        "</button>" +
+      "</div>" +
+      '<div class="exbody"' + (isOpen ? "" : " hidden") + ">" +
+        '<p class="kit"><strong>You need:</strong> ' + ex.kit + "</p>" +
+        "<ol>" + ex.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" +
+        '<p class="watch"><strong>Watch for:</strong> ' + ex.watch + "</p>" +
+        videoHTML(ex.video) +
+      "</div></article>";
+  }
+
+  function infoHTML(id, title, text) {
+    var isOpen = !!opened[id];
+    return '<article class="ex info" data-k="' + id + '"><div class="exhead">' +
+      '<button class="exbtn" data-act="toggle" aria-expanded="' + isOpen + '">' +
+      '<span><span class="exname">' + title + '</span></span><span class="chev" aria-hidden="true"></span></button></div>' +
+      '<div class="exbody"' + (isOpen ? "" : " hidden") + "><p>" + text + "</p></div></article>";
+  }
+
+  function dayHTML(day) {
+    var items = day.ex.map(normal);
+    var h = '<h2 class="dayname">' + day.name + '</h2>' +
+      '<p class="focus">' + day.focus + '<span class="time">' + day.time + '</span></p>' +
+      '<p class="intro">' + day.intro + '</p>';
+
+    if (items.length) {
+      h += '<div class="phase"><label for="phase">Where are you up to?</label><select id="phase">' +
+        PHASES.map(function (p, i) {
+          return '<option value="' + i + '"' + (i === phase ? " selected" : "") + ">" + p.label + ": " + p.name + "</option>";
+        }).join("") + "</select></div>";
+      h += '<div class="prog"><span id="progtext"></span></div><div class="bar" aria-hidden="true"><i id="progbar"></i></div>';
+      if (day.strength) h += infoHTML("warm-" + day.key, "Warm up, 3 minutes", WARM);
+      h += items.map(function (it) { return cardHTML(day, it); }).join("");
+      if (day.strength) h += infoHTML("cool-" + day.key, "When you finish", COOL);
+    } else {
+      h += '<p class="note"><strong>Today</strong>Walk the dog as normal, eat well, and put your feet up. Tomorrow is Monday: legs and core.</p>';
+    }
+    return h;
+  }
+
+  function guideHTML() {
+    var h = '<div class="guide"><h2 class="dayname">Guide</h2><p class="focus">Worth reading once</p>';
+    GUIDE.forEach(function (g) { h += "<h3>" + g[0] + "</h3><p>" + g[1] + "</p>"; });
+    h += "<h3>The eight weeks</h3><ul class=\"phases\">" +
+      PHASES.map(function (p) { return "<li><b>" + p.label + ": " + p.name + "</b>" + p.text + "</li>"; }).join("") + "</ul>";
+    h += '<p class="fine">This plan is general guidance, not medical advice. Check with your GP if you are unsure about anything. Videos are hosted on YouTube and belong to their creators.</p></div>';
+    return h;
+  }
+
+  function validRoute(r) {
+    if (r === "guide") return r;
+    for (var i = 0; i < DAYS.length; i++) if (DAYS[i].key === r) return r;
+    return null;
+  }
+  var route = validRoute((location.hash || "").replace("#", "")) || todayKey();
+  function currentDay() { return route; }
+
+  function updateProgress() {
+    var key = currentDay();
+    var day = DAYS.filter(function (d) { return d.key === key; })[0];
+    var t = document.getElementById("progtext");
+    var b = document.getElementById("progbar");
+    if (!day || !t || !b) return;
+    var items = day.ex.map(normal);
+    var n = items.filter(function (it) { return done[keyOf(day, it.id)]; }).length;
+    t.textContent = n === items.length ? "All done. Well done." : n + " of " + items.length + " done";
+    b.style.width = (items.length ? (n / items.length) * 100 : 0) + "%";
+  }
+
+  function render(scrollTop) {
+    var key = currentDay();
+    renderNav(key);
+    if (key === "guide") main.innerHTML = guideHTML();
+    else main.innerHTML = dayHTML(DAYS.filter(function (d) { return d.key === key; })[0]);
+    updateProgress();
+    if (scrollTop) window.scrollTo(0, 0);
+  }
+
+  /* ---------- Events ---------- */
+
+  main.addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    var card = btn.closest(".ex");
+    var act = btn.getAttribute("data-act");
+
+    if (act === "toggle" && card) {
+      var body = card.querySelector(".exbody");
+      var open = btn.getAttribute("aria-expanded") !== "true";
+      btn.setAttribute("aria-expanded", open);
+      body.hidden = !open;
+      opened[card.getAttribute("data-k")] = open;
+    } else if (act === "check" && card) {
+      var k = card.getAttribute("data-k");
+      var on = btn.getAttribute("aria-pressed") !== "true";
+      btn.setAttribute("aria-pressed", on);
+      card.classList.toggle("is-done", on);
+      if (on) done[k] = 1; else delete done[k];
+      store.set("sp-done", done);
+      updateProgress();
+    } else if (act === "play") {
+      var box = btn.closest(".vid");
+      var id = box.getAttribute("data-id");
+      box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
+        '?autoplay=1&rel=0&playsinline=1&modestbranding=1" title="Exercise video" ' +
+        'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+    }
+  });
+
+  main.addEventListener("change", function (e) {
+    if (e.target.id === "phase") {
+      phase = parseInt(e.target.value, 10) || 0;
+      store.set("sp-phase", phase);
+      render(false);
+    }
+  });
+
+  function go(r) {
+    if (!validRoute(r)) return;
+    route = r;
+    try { history.replaceState(null, "", "#" + r); } catch (e) {}
+    render(true);
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-route]");
+    if (b) go(b.getAttribute("data-route"));
+  });
+  window.addEventListener("hashchange", function () {
+    var r = validRoute((location.hash || "").replace("#", ""));
+    if (r && r !== route) { route = r; render(true); }
+  });
+  render(false);
+})();
+</script>
+</body>
+</html>
