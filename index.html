@@ -104,6 +104,31 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
 .phases b{display:block}
 .fine{margin-top:32px;font-size:16px;color:var(--muted)}
 
+.tools{display:flex;gap:8px}
+.tools .guidelink{padding:0 12px;font-size:16px}
+.log{margin:0 0 16px;padding:12px 12px 8px;border:2px solid var(--ink);border-radius:12px;background:#fff}
+.log h4{font:700 24px/1.1 var(--display);margin:0 0 6px}
+.log .last{font-size:17px;color:var(--muted);margin:0 0 12px;line-height:1.4}
+.log label{display:block;font-weight:700;font-size:17px;margin:0 0 12px}
+.log input{display:block;width:100%;min-height:52px;margin-top:4px;padding:0 12px;font:inherit;font-size:19px;font-weight:400;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.log input:focus{border-color:var(--focus)}
+.log .q{font-weight:700;font-size:17px;margin:0 0 4px}
+.feel{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 0 6px}
+.feel button{min-height:52px;padding:0 4px;border:2px solid var(--ink);border-radius:10px;background:#fff;font-weight:700;font-size:17px;cursor:pointer}
+.feel button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.saved{min-height:1.4em;margin:0;font-size:16px;font-weight:700;color:var(--go)}
+.btn{display:block;width:100%;min-height:56px;border:0;border-radius:12px;background:var(--road);color:var(--ink);font-weight:700;font-size:20px;cursor:pointer;margin:14px 0 4px}
+.logcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.logcard h3{font:700 26px/1.1 var(--display);margin:0 0 6px}
+.logcard .last{font-size:16px;color:var(--muted);margin:8px 0 0;line-height:1.4}
+.hist{list-style:none;margin:0;padding:0}
+.hist li{padding:7px 0;border-top:1px solid var(--line);font-size:18px}
+.hist li:first-child{border-top:0}
+.sharebox{width:100%;min-height:200px;font:inherit;font-size:16px;padding:10px;border:2px solid var(--ink);border-radius:10px;margin-top:8px}
+.btn2{background:#fff;border:2px solid var(--ink)}
+#sendstatus{font-size:16px;color:var(--muted);margin:2px 0 12px;line-height:1.4}
+.logcard summary{font:700 26px/1.1 var(--display);cursor:pointer;min-height:44px;display:flex;align-items:center}
+.logcard details p,.logcard p.hint{font-size:17px;margin:6px 0 10px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar i,.chev{transition:none}}
 @media (min-width:600px){body{font-size:20px}.dayname{font-size:60px}}
 </style>
@@ -112,7 +137,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
 
 <header class="top">
   <h1>Strength plan</h1>
-  <button type="button" class="guidelink" id="guidelink" data-route="guide">Guide</button>
+  <div class="tools"><button type="button" class="guidelink" id="loglink" data-route="log">Log</button><button type="button" class="guidelink" id="guidelink" data-route="guide">Guide</button></div>
 </header>
 <div class="roadline" aria-hidden="true"></div>
 <nav class="strip" aria-label="Days of the week"><div class="days" id="days"></div></nav>
@@ -323,6 +348,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
   var main = document.getElementById("main");
   var daysEl = document.getElementById("days");
   var guideLink = document.getElementById("guidelink");
+  var logLink = document.getElementById("loglink");
 
   var store = {
     get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -348,6 +374,281 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
   function normal(e) { return typeof e === "string" ? { id: e } : e; }
   function keyOf(day, id) { return WK + ":" + day.key + ":" + id; }
 
+  /* ---------- Log ---------- */
+
+  var FEEL = { easy: "Easy", right: "About right", hard: "Hard" };
+  var LOG = store.get("sp-log", {});
+  var WEEKS = store.get("sp-weeks", {});
+
+  function esc(v) { return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function todayISO() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function parseISO(s) { var p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function fmtDate(s) { return parseISO(s).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); }
+  function fmtWeek(s) { return parseISO(s).toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
+
+  function todayEntry(id) {
+    var a = LOG[id] || [], t = todayISO();
+    for (var i = 0; i < a.length; i++) if (a[i].d === t) return a[i];
+    return null;
+  }
+  function lastBefore(id) {
+    var a = LOG[id] || [], t = todayISO(), best = null;
+    for (var i = 0; i < a.length; i++) if (a[i].d !== t && (!best || a[i].d > best.d)) best = a[i];
+    return best;
+  }
+  function saveEntry(id, patch) {
+    var a = LOG[id] || (LOG[id] = []);
+    var e = todayEntry(id);
+    if (!e) { e = { d: todayISO() }; a.push(e); }
+    for (var k in patch) if (Object.prototype.hasOwnProperty.call(patch, k)) e[k] = patch[k];
+    if (!e.w && !e.r && !e.f) a.splice(a.indexOf(e), 1);
+    a.sort(function (x, y) { return x.d < y.d ? -1 : x.d > y.d ? 1 : 0; });
+    if (a.length > 40) a.splice(0, a.length - 40);
+    if (!a.length) delete LOG[id];
+    store.set("sp-log", LOG);
+    markDirty();
+  }
+  function entryParts(e) {
+    var p = [];
+    if (e.w) p.push(e.w);
+    if (e.r) p.push("reps " + e.r);
+    if (e.f) p.push("felt " + FEEL[e.f].toLowerCase());
+    return p;
+  }
+  function hintText(id) {
+    var l = lastBefore(id);
+    if (!l) return "First time: start gentle and focus on good form.";
+    var bits = entryParts(l).join(", ");
+    var t = "Last time (" + fmtDate(l.d) + "): " + (bits || "nothing noted") + ".";
+    if (l.f === "easy") t += " It felt easy, so try a little heavier or a few more reps today.";
+    else if (l.f === "hard") t += " It felt hard, so stay the same or go a touch lighter.";
+    else if (l.f === "right") t += " Stay here until it starts to feel easy.";
+    return t;
+  }
+  function logBlockHTML(id) {
+    var e = todayEntry(id) || {};
+    var f = e.f || "";
+    return '<div class="log" data-ex="' + id + '"><h4>Log today</h4>' +
+      '<p class="last">' + esc(hintText(id)) + "</p>" +
+      '<label>Weight or band (leave blank if none)<input type="text" data-f="w" autocomplete="off" placeholder="e.g. 3 kg, or green band" value="' + esc(e.w) + '"></label>' +
+      '<label>Reps in each set<input type="text" data-f="r" autocomplete="off" placeholder="e.g. 8 8 7" value="' + esc(e.r) + '"></label>' +
+      '<p class="q">How did it feel?</p><div class="feel" role="group" aria-label="How did it feel?">' +
+      ["easy", "right", "hard"].map(function (v) {
+        return '<button type="button" data-act="feel" data-v="' + v + '" aria-pressed="' + (f === v) + '">' + FEEL[v] + "</button>";
+      }).join("") + "</div>" +
+      '<p class="saved" aria-live="polite"></p></div>';
+  }
+  function flashSaved(lg) {
+    var el = lg.querySelector(".saved");
+    el.textContent = "Saved";
+    clearTimeout(flashSaved.t);
+    flashSaved.t = setTimeout(function () { el.textContent = ""; }, 1500);
+  }
+
+  function sessionsNow() {
+    var n = 0;
+    DAYS.forEach(function (day) {
+      if (!day.strength) return;
+      var items = day.ex.map(normal), t = 0;
+      items.forEach(function (it) { if (done[keyOf(day, it.id)]) t++; });
+      if (t >= Math.ceil(items.length / 2)) n++;
+    });
+    return n;
+  }
+  function recordSessions() {
+    WEEKS[WK] = sessionsNow();
+    var keys = Object.keys(WEEKS).sort();
+    while (keys.length > 12) delete WEEKS[keys.shift()];
+    store.set("sp-weeks", WEEKS);
+  }
+  recordSessions();
+
+  function strengthCount() { return DAYS.filter(function (d) { return d.strength; }).length; }
+
+  function logPageHTML() {
+    var h = '<h2 class="dayname">Log</h2><p class="focus">Your numbers so far</p>' +
+      '<p class="intro">Open any exercise and fill in "Log today". It shows up here.</p>';
+    h += '<button type="button" class="btn" data-act="sendnow">Send my log now</button>' +
+      '<p class="saved" id="sharemsg" aria-live="polite"></p>' +
+      '<p id="sendstatus">' + esc(statusText()) + '</p><div id="sharearea"></div>';
+    var weeks = Object.keys(WEEKS).sort().reverse();
+    h += '<div class="logcard"><h3>Strength sessions</h3><ul class="hist">' +
+      weeks.map(function (k) { return "<li><b>Week of " + fmtWeek(k) + ":</b> " + WEEKS[k] + " of " + strengthCount() + "</li>"; }).join("") +
+      '</ul><p class="last">A session counts once you have ticked off at least half of the exercises for that day.</p></div>';
+    var any = false;
+    Object.keys(EX).forEach(function (id) {
+      var a = (LOG[id] || []).slice().sort(function (x, y) { return x.d < y.d ? 1 : -1; }).slice(0, 6);
+      if (!a.length) return;
+      any = true;
+      h += '<div class="logcard"><h3>' + EX[id].name + '</h3><ul class="hist">' +
+        a.map(function (e) { return "<li><b>" + fmtDate(e.d) + "</b><br>" + esc(entryParts(e).join(", ") || "nothing noted") + "</li>"; }).join("") + "</ul></div>";
+    });
+    if (!any) h += '<p class="note"><strong>Nothing logged yet</strong>Your weights, reps and how each exercise felt will appear here.</p>';
+    h += '<button type="button" class="btn btn2" data-act="backup">Copy backup code</button>';
+    h += '<details class="logcard"><summary>Restore from a backup</summary>' +
+      '<p>If the log ever gets wiped, paste the backup code here. It starts with SP1: and finishes with :END</p>' +
+      '<textarea id="restorebox" class="sharebox" aria-label="Backup code"></textarea>' +
+      '<button type="button" class="btn" data-act="restore">Restore</button><p class="saved" id="restoremsg" aria-live="polite"></p></details>';
+    return h;
+  }
+
+  function historyText() {
+    var t = "";
+    Object.keys(EX).forEach(function (id) {
+      var a = (LOG[id] || []).slice().sort(function (x, y) { return x.d < y.d ? 1 : -1; }).slice(0, 4);
+      if (!a.length) return;
+      t += "\n" + EX[id].name + "\n";
+      a.forEach(function (e) { t += "  " + fmtDate(e.d) + ": " + (entryParts(e).join(", ") || "nothing noted") + "\n"; });
+    });
+    return t || "\nNothing logged yet.\n";
+  }
+  function logText() {
+    return "Strength log, " + fmtDate(todayISO()) + "\nThis week: " + sessionsNow() + " of " + strengthCount() + " strength sessions\n" + historyText();
+  }
+
+  function shareMsg(m) { var el = document.getElementById("sharemsg"); if (el) el.textContent = m; }
+  function showBox(text, msg) {
+    var area = document.getElementById("sharearea");
+    if (!area) return;
+    area.innerHTML = '<textarea class="sharebox" readonly>' + esc(text) + "</textarea>";
+    var ta = area.firstChild; ta.focus(); ta.select();
+    shareMsg(msg || "Copy this text and paste it into a message.");
+  }
+  function shareLog() {
+    var text = logText();
+    if (navigator.share) {
+      navigator.share({ title: "Strength log", text: text }).catch(function () {});
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { shareMsg("Copied. Paste it into a message."); }, function () { showBox(text); });
+    } else {
+      showBox(text);
+    }
+  }
+
+  /* ---------- Backup, restore and automatic email ---------- */
+
+  // Paste the Google Apps Script web app URL between the quotes to switch on syncing to the family Sheet.
+  var SHEET_URL = "https://script.google.com/macros/s/AKfycbzZLAGOvcznI2Hb0oN0bjp9Gglwn0KLeaxhKiS66nLYtrB_omnkfEh_AcKb3CD1ZmYR/exec";
+  var SHEET_TOKEN = "i3hvmiNRODQ4pagLJNy4btgs";
+  var SEND_DELAY = 120000; // wait 2 minutes after the last change before syncing
+  var AUTO_ON = !!SHEET_URL;
+  var FIRST = store.get("sp-first", "");
+  if (!FIRST) { FIRST = todayISO(); store.set("sp-first", FIRST); }
+  var SENT = store.get("sp-sent", { dirty: false, chg: 0, at: 0, ok: true });
+  var sending = false;
+
+  function saveSent() { store.set("sp-sent", SENT); }
+  function markDirty() {
+    SENT.dirty = true;
+    SENT.chg = Date.now();
+    saveSent();
+    scheduleSend();
+  }
+
+  function makeBackup() {
+    var slim = {};
+    Object.keys(LOG).forEach(function (id) { slim[id] = LOG[id].slice(-12); });
+    var mine = {};
+    Object.keys(done).forEach(function (k) { if (k.indexOf(WK + ":") === 0) mine[k] = 1; });
+    return "SP1:" + btoa(encodeURIComponent(JSON.stringify({ v: 1, log: slim, weeks: WEEKS, phase: phase, done: mine }))) + ":END";
+  }
+  function readBackup(text) {
+    var m = /SP1:([\s\S]*?):END/.exec(text || "");
+    if (!m) throw new Error("no code");
+    var d = JSON.parse(decodeURIComponent(atob(m[1].replace(/\s+/g, ""))));
+    if (!d || d.v !== 1) throw new Error("bad code");
+    return d;
+  }
+  function applyBackup(d) {
+    var n = 0;
+    Object.keys(d.log || {}).forEach(function (id) {
+      if (!EX[id] || !Array.isArray(d.log[id])) return;
+      var map = {};
+      (LOG[id] || []).forEach(function (e) { map[e.d] = e; });
+      d.log[id].forEach(function (e) {
+        if (e && typeof e.d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.d)) {
+          map[e.d] = { d: e.d, w: String(e.w || ""), r: String(e.r || ""), f: FEEL[e.f] ? e.f : "" };
+          n++;
+        }
+      });
+      LOG[id] = Object.keys(map).sort().map(function (k) { return map[k]; });
+    });
+    Object.keys(d.weeks || {}).forEach(function (k) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(k)) WEEKS[k] = Math.max(WEEKS[k] || 0, parseInt(d.weeks[k], 10) || 0);
+    });
+    Object.keys(d.done || {}).forEach(function (k) { if (k.indexOf(WK + ":") === 0) done[k] = 1; });
+    var p = parseInt(d.phase, 10);
+    if (p >= 0 && p < PHASES.length) phase = p;
+    store.set("sp-log", LOG); store.set("sp-weeks", WEEKS); store.set("sp-done", done); store.set("sp-phase", phase);
+    recordSessions();
+    return n;
+  }
+
+  function dateOfDay(i) {
+    var d = parseISO(WK);
+    d.setDate(d.getDate() + i);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function buildPayload() {
+    var entries = [];
+    Object.keys(LOG).forEach(function (id) {
+      if (!EX[id]) return;
+      LOG[id].forEach(function (e) {
+        entries.push({ d: e.d, ex: EX[id].name, w: e.w || "", r: e.r || "", f: e.f ? FEEL[e.f] : "" });
+      });
+    });
+    var days = [], today = todayISO();
+    DAYS.forEach(function (day, i) {
+      var items = day.ex.map(normal);
+      if (!items.length) return;
+      var date = dateOfDay(i);
+      var t = 0;
+      items.forEach(function (it) { if (done[keyOf(day, it.id)]) t++; });
+      if (!t && (date < FIRST || date > today)) return;
+      days.push({ date: date, day: day.name, done: t, total: items.length });
+    });
+    return { token: SHEET_TOKEN, sentAt: new Date().toISOString(), phase: PHASES[phase].label + ": " + PHASES[phase].name,
+             sessions: sessionsNow(), entries: entries, days: days, backup: makeBackup() };
+  }
+
+  function statusText() {
+    if (!AUTO_ON) return "";
+    if (!SENT.ok) return "The last update did not go through. It will try again next time you open this page.";
+    var base = "Your progress is shared with your family automatically.";
+    if (!SENT.at) return base;
+    return base + " Last updated " + new Date(SENT.at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + ".";
+  }
+  function refreshStatus() { var el = document.getElementById("sendstatus"); if (el) el.textContent = statusText(); }
+
+  function sendNow(manual) {
+    if (!AUTO_ON) { if (manual) shareLog(); return; }
+    if (sending) return;
+    sending = true;
+    if (manual) shareMsg("Sending...");
+    fetch(SHEET_URL, { method: "POST", body: JSON.stringify(buildPayload()), keepalive: !manual })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.success) throw new Error("failed");
+        SENT.dirty = false; SENT.at = Date.now(); SENT.ok = true; saveSent();
+        if (manual) shareMsg("Sent.");
+      })
+      .catch(function () {
+        SENT.ok = false; saveSent();
+        if (manual) shareMsg("Could not send. Check the internet connection and try again.");
+      })
+      .then(function () { sending = false; refreshStatus(); });
+  }
+
+  function scheduleSend() {
+    clearTimeout(scheduleSend.t);
+    if (!AUTO_ON) return;
+    scheduleSend.t = setTimeout(function () { if (SENT.dirty) sendNow(false); }, SEND_DELAY);
+  }
+  function catchUp() { if (AUTO_ON && SENT.dirty && Date.now() - SENT.chg > SEND_DELAY) sendNow(false); }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden" && AUTO_ON && SENT.dirty) sendNow(false);
+  });
+
   /* ---------- Rendering ---------- */
 
   function renderNav(active) {
@@ -358,8 +659,8 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
       var label = d.name + (d.key === today ? " (today)" : "");
       return '<button type="button" class="' + cls + '" data-route="' + d.key + '"' + cur + ' aria-label="' + label + '">' + d.short + "</button>";
     }).join("");
-    if (active === "guide") guideLink.setAttribute("aria-current", "page");
-    else guideLink.removeAttribute("aria-current");
+    if (active === "guide") guideLink.setAttribute("aria-current", "page"); else guideLink.removeAttribute("aria-current");
+    if (active === "log") logLink.setAttribute("aria-current", "page"); else logLink.removeAttribute("aria-current");
   }
 
   function videoHTML(v) {
@@ -387,6 +688,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
         '<p class="kit"><strong>You need:</strong> ' + ex.kit + "</p>" +
         "<ol>" + ex.steps.map(function (s) { return "<li>" + s + "</li>"; }).join("") + "</ol>" +
         '<p class="watch"><strong>Watch for:</strong> ' + ex.watch + "</p>" +
+        logBlockHTML(item.id) +
         videoHTML(ex.video) +
       "</div></article>";
   }
@@ -430,7 +732,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
   }
 
   function validRoute(r) {
-    if (r === "guide") return r;
+    if (r === "guide" || r === "log") return r;
     for (var i = 0; i < DAYS.length; i++) if (DAYS[i].key === r) return r;
     return null;
   }
@@ -453,6 +755,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     var key = currentDay();
     renderNav(key);
     if (key === "guide") main.innerHTML = guideHTML();
+    else if (key === "log") main.innerHTML = logPageHTML();
     else main.innerHTML = dayHTML(DAYS.filter(function (d) { return d.key === key; })[0]);
     updateProgress();
     if (scrollTop) window.scrollTo(0, 0);
@@ -479,6 +782,8 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
       card.classList.toggle("is-done", on);
       if (on) done[k] = 1; else delete done[k];
       store.set("sp-done", done);
+      recordSessions();
+      markDirty();
       updateProgress();
     } else if (act === "play") {
       var box = btn.closest(".vid");
@@ -486,7 +791,49 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
       box.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
         '?autoplay=1&rel=0&playsinline=1&modestbranding=1" title="Exercise video" ' +
         'allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+    } else if (act === "feel") {
+      var lg = btn.closest(".log");
+      var id = lg.getAttribute("data-ex");
+      var v = btn.getAttribute("data-v");
+      var cur = todayEntry(id);
+      var nv = cur && cur.f === v ? "" : v;
+      saveEntry(id, { f: nv });
+      Array.prototype.forEach.call(lg.querySelectorAll(".feel button"), function (b) {
+        b.setAttribute("aria-pressed", b.getAttribute("data-v") === nv);
+      });
+      flashSaved(lg);
+    } else if (act === "sendnow") {
+      sendNow(true);
+    } else if (act === "backup") {
+      var code = makeBackup();
+      var okMsg = "Backup code copied. Paste it into a note or a message to yourself.";
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function () { shareMsg(okMsg); }, function () { showBox(code, "Copy this whole code and keep it somewhere safe."); });
+      } else {
+        showBox(code, "Copy this whole code and keep it somewhere safe.");
+      }
+    } else if (act === "restore") {
+      var box = document.getElementById("restorebox");
+      var rmsg = document.getElementById("restoremsg");
+      try {
+        var n = applyBackup(readBackup(box.value));
+        render(true);
+        shareMsg("Restored " + n + " log entries.");
+      } catch (err) {
+        rmsg.style.color = "#B00020";
+        rmsg.textContent = "That does not look like a backup code. Copy the whole code, from SP1: to :END, and try again.";
+      }
     }
+  });
+
+  main.addEventListener("input", function (e) {
+    var inp = e.target;
+    if (!inp.matches || !inp.matches(".log input")) return;
+    var lg = inp.closest(".log");
+    var patch = {};
+    patch[inp.getAttribute("data-f")] = inp.value.trim();
+    saveEntry(lg.getAttribute("data-ex"), patch);
+    flashSaved(lg);
   });
 
   main.addEventListener("change", function (e) {
@@ -512,6 +859,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     if (r && r !== route) { route = r; render(true); }
   });
   render(false);
+  catchUp();
 })();
 </script>
 </body>
