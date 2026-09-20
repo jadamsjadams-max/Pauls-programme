@@ -129,6 +129,30 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
 #sendstatus{font-size:16px;color:var(--muted);margin:2px 0 12px;line-height:1.4}
 .logcard summary{font:700 26px/1.1 var(--display);cursor:pointer;min-height:44px;display:flex;align-items:center}
 .logcard details p,.logcard p.hint{font-size:17px;margin:6px 0 10px;color:var(--muted)}
+.tools{gap:6px}
+.tools .guidelink{padding:0 10px}
+.ringcard{background:var(--ink);color:#fff;border-radius:22px;padding:22px 16px 10px;margin:8px 0 14px}
+.bigring{display:flex;justify-content:center}
+.bigring svg{width:min(66vw,250px);height:auto;display:block}
+.legend{list-style:none;margin:14px 0 0;padding:0}
+.legend li{display:flex;align-items:center;gap:12px;padding:12px 4px;border-top:1px solid #2A3037}
+.sw{flex:none;width:16px;height:16px;border-radius:50%}
+.legend .lbl{flex:1;font-size:19px}
+.legend .num{font:700 32px/1 var(--display)}
+.legend .num small{font:400 17px var(--body);color:#B9C2CA}
+.coach{font-size:20px;font-weight:700;margin:0 0 6px}
+.sub{font:700 28px/1.1 var(--display);margin:24px 0 8px}
+.daygrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dg{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 8px;border:0;border-radius:12px;background:var(--ink);color:#fff;cursor:pointer;min-height:98px}
+.dg svg{width:100%;max-width:46px;display:block}
+.dg b{font-size:15px}
+.dg span{font-size:15px;color:#B9C2CA}
+.dg.today{box-shadow:0 0 0 3px var(--road)}
+.weeks{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.wk{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 0 8px;border-radius:12px;background:var(--ink);color:#fff}
+.wk svg{width:64px;height:64px}
+.wk b{font-size:15px}
+.fine2{font-size:16px;color:var(--muted);margin:10px 0 0}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.bar i,.chev{transition:none}}
 @media (min-width:600px){body{font-size:20px}.dayname{font-size:60px}}
 </style>
@@ -136,8 +160,8 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
 <body>
 
 <header class="top">
-  <h1>Strength plan</h1>
-  <div class="tools"><button type="button" class="guidelink" id="loglink" data-route="log">Log</button><button type="button" class="guidelink" id="guidelink" data-route="guide">Guide</button></div>
+  <h1>Strength</h1>
+  <div class="tools"><button type="button" class="guidelink" id="weeklink" data-route="week">Week</button><button type="button" class="guidelink" id="loglink" data-route="log">Log</button><button type="button" class="guidelink" id="guidelink" data-route="guide">Guide</button></div>
 </header>
 <div class="roadline" aria-hidden="true"></div>
 <nav class="strip" aria-label="Days of the week"><div class="days" id="days"></div></nav>
@@ -323,7 +347,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     { key: "fri", short: "Fri", name: "Friday", focus: "Full body", time: "About 30 minutes", strength: true,
       intro: "The heaviest day of the week. Take your time and rest between sets.",
       ex: ["goblet", "rdl", "floorpress", "carry"] },
-    { key: "sat", short: "Sat", name: "Saturday", focus: "Walk day", time: "Your normal dog walk",
+    { key: "sat", short: "Sat", name: "Saturday", focus: "Walk day", time: "Your normal dog walk", optional: true,
       intro: "Your usual walk is the main event. If you fancy a bonus, do these two while the kettle boils.",
       ex: [{ id: "sitstand", dose: "1 set of 10" }, { id: "calf", dose: "1 set of 12" }] },
     { key: "sun", short: "Sun", name: "Sunday", focus: "Rest day", time: "Nothing to do but walk",
@@ -349,6 +373,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
   var daysEl = document.getElementById("days");
   var guideLink = document.getElementById("guidelink");
   var logLink = document.getElementById("loglink");
+  var weekLink = document.getElementById("weeklink");
 
   var store = {
     get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -445,23 +470,127 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     flashSaved.t = setTimeout(function () { el.textContent = ""; }, 1500);
   }
 
-  function sessionsNow() {
-    var n = 0;
+  var WK2 = store.get("sp-wk2", {});
+  var C_STR = "#FFD100", C_BAL = "#42D77D", C_ALL = "#4CC9F0";
+
+  function dayTicks(day) {
+    var items = day.ex.map(normal), t = 0;
+    items.forEach(function (it) { if (done[keyOf(day, it.id)]) t++; });
+    return { t: t, n: items.length };
+  }
+  function planned(day) { return day.ex.length > 0 && !day.optional; }
+  function goals() {
+    var g = { s: 0, b: 0 };
+    DAYS.forEach(function (d) { if (!planned(d)) return; if (d.strength) g.s++; else g.b++; });
+    return g;
+  }
+  function weekStats() {
+    var st = { s: 0, b: 0, e: 0, t: 0 };
     DAYS.forEach(function (day) {
-      if (!day.strength) return;
-      var items = day.ex.map(normal), t = 0;
-      items.forEach(function (it) { if (done[keyOf(day, it.id)]) t++; });
-      if (t >= Math.ceil(items.length / 2)) n++;
+      if (!planned(day)) return;
+      var d = dayTicks(day);
+      st.e += Math.min(d.t, d.n);
+      st.t += d.n;
+      if (d.t >= Math.ceil(d.n / 2)) { if (day.strength) st.s++; else st.b++; }
     });
-    return n;
+    return st;
+  }
+  function sessionsNow() { return weekStats().s; }
+  function trimKeys(obj) {
+    var keys = Object.keys(obj).sort();
+    while (keys.length > 12) delete obj[keys.shift()];
   }
   function recordSessions() {
-    WEEKS[WK] = sessionsNow();
-    var keys = Object.keys(WEEKS).sort();
-    while (keys.length > 12) delete WEEKS[keys.shift()];
+    var st = weekStats();
+    WEEKS[WK] = st.s;
+    WK2[WK] = st;
+    trimKeys(WEEKS); trimKeys(WK2);
     store.set("sp-weeks", WEEKS);
+    store.set("sp-wk2", WK2);
   }
   recordSessions();
+
+  function ringSVG(size, rings, sw, gap, animate) {
+    var c = size / 2;
+    var out = '<svg viewBox="0 0 ' + size + " " + size + '" aria-hidden="true">';
+    rings.forEach(function (rg, i) {
+      var r = c - sw / 2 - 1 - i * (sw + gap);
+      var circ = 2 * Math.PI * r;
+      var v = rg.v == null || isNaN(rg.v) ? 0 : Math.max(0, Math.min(1, rg.v));
+      out += '<circle cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="' + rg.c + '" stroke-opacity=".25" stroke-width="' + sw + '"/>';
+      if (v > 0) {
+        var len = circ * v;
+        out += '<circle' + (animate ? ' class="rfg" data-len="' + len + '" data-circ="' + circ + '"' : "") +
+          ' cx="' + c + '" cy="' + c + '" r="' + r + '" fill="none" stroke="' + rg.c + '" stroke-width="' + sw +
+          '" stroke-linecap="round" transform="rotate(-90 ' + c + " " + c + ')" stroke-dasharray="' +
+          (animate ? "0.01 " : len + " ") + circ + '"/>';
+      }
+    });
+    return out + "</svg>";
+  }
+  function animateRings() {
+    var els = main.querySelectorAll(".rfg");
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    Array.prototype.forEach.call(els, function (el) {
+      var f = el.getAttribute("data-len") + " " + el.getAttribute("data-circ");
+      if (reduce) { el.style.strokeDasharray = f; return; }
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.transition = "stroke-dasharray 1s ease-out";
+          el.style.strokeDasharray = f;
+        });
+      });
+    });
+  }
+
+  function coachText(st, g) {
+    if (st.s >= g.s && st.b >= g.b && st.e >= st.t) return "Every ring closed. Brilliant week.";
+    if (st.e === 0) return "A fresh week. Start with Monday: legs and core.";
+    var need = g.s - st.s;
+    if (need > 0) return need === 1 ? "One more strength session closes the yellow ring." : need + " more strength sessions close the yellow ring.";
+    need = g.b - st.b;
+    if (need > 0) return need === 1 ? "One more balance session closes the green ring." : need + " more balance sessions close the green ring.";
+    return "Nearly there. Tick off the rest of your exercises to close the blue ring.";
+  }
+
+  function weekPageHTML() {
+    var st = weekStats(), g = goals();
+    var h = '<h2 class="dayname">This week</h2><p class="focus">Week of ' + fmtWeek(WK) +
+      '<span class="time">' + PHASES[phase].label + ": " + PHASES[phase].name + "</span></p>";
+    h += '<div class="ringcard"><div class="bigring" role="img" aria-label="Weekly rings: ' + st.s + " of " + g.s + " strength sessions, " +
+      st.b + " of " + g.b + " balance sessions, " + st.e + " of " + st.t + ' exercises ticked">' +
+      ringSVG(200, [{ v: st.s / g.s, c: C_STR }, { v: st.b / g.b, c: C_BAL }, { v: st.t ? st.e / st.t : 0, c: C_ALL }], 18, 4, true) + "</div>";
+    h += '<ul class="legend">' +
+      '<li><span class="sw" style="background:' + C_STR + '"></span><span class="lbl">Strength sessions</span><span class="num">' + st.s + "<small> of " + g.s + "</small></span></li>" +
+      '<li><span class="sw" style="background:' + C_BAL + '"></span><span class="lbl">Balance sessions</span><span class="num">' + st.b + "<small> of " + g.b + "</small></span></li>" +
+      '<li><span class="sw" style="background:' + C_ALL + '"></span><span class="lbl">Exercises ticked</span><span class="num">' + st.e + "<small> of " + st.t + "</small></span></li></ul></div>";
+    h += '<p class="coach">' + coachText(st, g) + '</p><p class="fine2">The rings start fresh every Monday.</p>';
+
+    h += '<h3 class="sub">Day by day</h3><div class="daygrid">' + DAYS.map(function (day) {
+      var d = dayTicks(day);
+      var col = day.strength ? C_STR : day.optional ? C_ALL : C_BAL;
+      var label = d.n ? d.t + "/" + d.n : "Rest";
+      var aria = day.name + ": " + (d.n ? d.t + " of " + d.n + " done" : "rest day");
+      return '<button type="button" class="dg' + (day.key === todayKey() ? " today" : "") + '" data-route="' + day.key + '" aria-label="' + aria + '">' +
+        ringSVG(48, [{ v: d.n ? d.t / d.n : 0, c: col }], 7, 0, false) + "<b>" + day.short + "</b><span>" + label + "</span></button>";
+    }).join("") + "</div>";
+
+    var seen = {};
+    Object.keys(WEEKS).concat(Object.keys(WK2)).forEach(function (k) { if (k < WK) seen[k] = 1; });
+    var keys = Object.keys(seen).sort().reverse().slice(0, 6);
+    h += '<h3 class="sub">Earlier weeks</h3>';
+    if (!keys.length) {
+      h += '<p class="fine2">Your finished weeks will appear here.</p>';
+    } else {
+      h += '<div class="weeks">' + keys.map(function (k) {
+        var w = WK2[k];
+        var s = w ? w.s : WEEKS[k];
+        var rings = [{ v: g.s ? s / g.s : 0, c: C_STR }, { v: w && g.b ? w.b / g.b : 0, c: C_BAL }, { v: w && w.t ? w.e / w.t : 0, c: C_ALL }];
+        return '<div class="wk">' + ringSVG(64, rings, 6, 1, false) + "<b>" + fmtWeek(k) + "</b></div>";
+      }).join("") + "</div>";
+    }
+    return h;
+  }
 
   function strengthCount() { return DAYS.filter(function (d) { return d.strength; }).length; }
 
@@ -528,7 +657,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
   /* ---------- Backup, restore and automatic email ---------- */
 
   // Paste the Google Apps Script web app URL between the quotes to switch on syncing to the family Sheet.
-  var SHEET_URL = "https://script.google.com/macros/s/AKfycbzZLAGOvcznI2Hb0oN0bjp9Gglwn0KLeaxhKiS66nLYtrB_omnkfEh_AcKb3CD1ZmYR/exec";
+  var SHEET_URL = "https://script.google.com/macros/s/AKfycbzK_V3EMLHRKbZ70LgHin0uBnhv_RWGafvwKz_wsxCrOq72FXNw5D1PdQ4rReY5Ih00NQ/exec";
   var SHEET_TOKEN = "i3hvmiNRODQ4pagLJNy4btgs";
   var SEND_DELAY = 120000; // wait 2 minutes after the last change before syncing
   var AUTO_ON = !!SHEET_URL;
@@ -550,7 +679,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     Object.keys(LOG).forEach(function (id) { slim[id] = LOG[id].slice(-12); });
     var mine = {};
     Object.keys(done).forEach(function (k) { if (k.indexOf(WK + ":") === 0) mine[k] = 1; });
-    return "SP1:" + btoa(encodeURIComponent(JSON.stringify({ v: 1, log: slim, weeks: WEEKS, phase: phase, done: mine }))) + ":END";
+    return "SP1:" + btoa(encodeURIComponent(JSON.stringify({ v: 1, log: slim, weeks: WEEKS, wk2: WK2, phase: phase, done: mine }))) + ":END";
   }
   function readBackup(text) {
     var m = /SP1:([\s\S]*?):END/.exec(text || "");
@@ -576,10 +705,16 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     Object.keys(d.weeks || {}).forEach(function (k) {
       if (/^\d{4}-\d{2}-\d{2}$/.test(k)) WEEKS[k] = Math.max(WEEKS[k] || 0, parseInt(d.weeks[k], 10) || 0);
     });
+    Object.keys(d.wk2 || {}).forEach(function (k) {
+      var w = d.wk2[k];
+      if (/^\d{4}-\d{2}-\d{2}$/.test(k) && k !== WK && w && !WK2[k]) {
+        WK2[k] = { s: parseInt(w.s, 10) || 0, b: parseInt(w.b, 10) || 0, e: parseInt(w.e, 10) || 0, t: parseInt(w.t, 10) || 0 };
+      }
+    });
     Object.keys(d.done || {}).forEach(function (k) { if (k.indexOf(WK + ":") === 0) done[k] = 1; });
     var p = parseInt(d.phase, 10);
     if (p >= 0 && p < PHASES.length) phase = p;
-    store.set("sp-log", LOG); store.set("sp-weeks", WEEKS); store.set("sp-done", done); store.set("sp-phase", phase);
+    store.set("sp-log", LOG); store.set("sp-weeks", WEEKS); store.set("sp-wk2", WK2); store.set("sp-done", done); store.set("sp-phase", phase);
     recordSessions();
     return n;
   }
@@ -661,6 +796,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     }).join("");
     if (active === "guide") guideLink.setAttribute("aria-current", "page"); else guideLink.removeAttribute("aria-current");
     if (active === "log") logLink.setAttribute("aria-current", "page"); else logLink.removeAttribute("aria-current");
+    if (active === "week") weekLink.setAttribute("aria-current", "page"); else weekLink.removeAttribute("aria-current");
   }
 
   function videoHTML(v) {
@@ -732,7 +868,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
   }
 
   function validRoute(r) {
-    if (r === "guide" || r === "log") return r;
+    if (r === "guide" || r === "log" || r === "week") return r;
     for (var i = 0; i < DAYS.length; i++) if (DAYS[i].key === r) return r;
     return null;
   }
@@ -756,6 +892,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 48px}
     renderNav(key);
     if (key === "guide") main.innerHTML = guideHTML();
     else if (key === "log") main.innerHTML = logPageHTML();
+    else if (key === "week") { main.innerHTML = weekPageHTML(); animateRings(); }
     else main.innerHTML = dayHTML(DAYS.filter(function (d) { return d.key === key; })[0]);
     updateProgress();
     if (scrollTop) window.scrollTo(0, 0);
